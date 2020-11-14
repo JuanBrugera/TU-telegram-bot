@@ -1,6 +1,7 @@
 from telegram_bot.scrapers import ProductScraper
 from telegram_bot.regexs import *
 from telegram_bot import *
+from telegram_bot import formatters as fm
 
 import logging
 
@@ -28,21 +29,23 @@ YES, NO = "SI", "NO"
 
 
 def start(update: Update, context: CallbackContext) -> None:
+    # TODO start text
     update.message.reply_text('Hi!')
     return ConversationHandler.END
 
 
 def help(update: Update, context: CallbackContext) -> None:
+    # TODO help text
     update.message.reply_text('Help!')
     return ConversationHandler.END
 
 
 def url(update: Update, context: CallbackContext) -> int:
     product_url = TU_PRODUCT_REGEX.search(update.message.text).group(0)
-    context.user_data.update({'url': product_url})
+    context.user_data.update({'product_url': product_url})
     reply_markup = InlineKeyboardMarkup([[
         InlineKeyboardButton(text=YES, callback_data=YES),
-        InlineKeyboardButton(text=NO, callback_data=YES),
+        InlineKeyboardButton(text=NO, callback_data=NO),
     ]])
     update.message.reply_text("¿Deseas añadir un ID de campaña?", reply_markup=reply_markup)
     return CHOOSING
@@ -52,10 +55,11 @@ def button(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     query.answer()
     answer = query.data
+    logger.info(answer)
     if answer == NO:
-        send(context)
-        return ConversationHandler.END
+        return send(context)
     else:
+        query.from_user.send_message("Introduce el ID de camapaña")
         return UTM_CAMPAIGN
 
 
@@ -63,15 +67,33 @@ def campaign(update: Update, context: CallbackContext):
     campaign_id = update.message.text.strip()
     if campaign_id:
         context.user_data.update({'campaign_id': campaign_id})
-        send(context)
-        return ConversationHandler.END
+        return send(context)
 
 
 def send(context: CallbackContext):
-    pass  # TODO scrap and send
+    product_url = context.user_data.get('product_url')
+
+    logger.info(product_url)
+    campaign_id = context.user_data.get('campaign_id', None)
+
+    logger.info(campaign_id)
+    t_params = dict([tp.split("=") for tp in TRACKING_PARAMS.split("&")])
+    t_params.update({'utm_campaign': campaign_id})
+
+    logger.info(t_params)
+    details = ProductScraper(product_url, tracking_params=t_params).details
+    context.bot.send_message(chat_id=CHANNEL,
+                             text=fm.telegram_message(details),
+                             parse_mode=ParseMode.MARKDOWN_V2,
+                             reply_markup=InlineKeyboardMarkup([
+                                 [InlineKeyboardButton(text="💥 Ir a la oferta ❗💥", url=details.url_to_sent)]
+                             ])
+                             )
+    return ConversationHandler.END
 
 
 def cancel(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Conversación cancelada")
     return ConversationHandler.END
 
 
@@ -84,7 +106,7 @@ def main():
     # Create the Updater and pass it your bot's token.
     # Make sure to set use_context=True to use the new context based callbacks
     # Post version 12 this will no longer be necessary
-    updater = Updater(token=token, use_context=True)
+    updater = Updater(token=TOKEN, use_context=True)
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
