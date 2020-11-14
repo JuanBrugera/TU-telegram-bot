@@ -4,6 +4,8 @@ from fake_useragent import UserAgent
 from telegram_bot.objects import Product
 import json
 
+from telegram_bot.regexs import TU_PRODUCT_JSON_REGEX
+
 HEADERS = {'user-agent': UserAgent().chrome}
 
 
@@ -26,29 +28,53 @@ class Base:
 
 
 class ProductScraper(Base):
+    product_json = None
+
+    def _set_product_json(self):
+        if raw := self.soup.find('script', text=TU_PRODUCT_JSON_REGEX).contents.pop().strip():
+            data = TU_PRODUCT_JSON_REGEX.search(raw).group(1)
+            self.product_json = json.loads(data)
+
     @property
     def title(self):
-        return self.soup.find('h1', {'class': 'product_title product-single__title'}).text
+        if title := self.product_json.get("title"):
+            return title.strip()
+        else:
+            return self.soup.find('h1', {'class': 'product_title product-single__title'}).text.strip()
+
+    @property
+    def product_type(self):
+        if t := self.product_json.get("type", None):
+            return t.lower()
 
     @property
     def now_price(self):
-        price = self.soup.find('ins', {'class': 'product_price'})
-        price = price if price else self.soup.find('span', {'class': 'product_price'})
-        return self.str_to_float(price.text)
+        if price := self.product_json.get("price", None):
+            return price / 100
+        else:
+            price = self.soup.find('ins', {'class': 'product_price'})
+            price = price if price else self.soup.find('span', {'class': 'product_price'})
+            return self.str_to_float(price.text)
 
     @property
     def before_price(self):
-        if price := self.soup.find('del', {'class': 'compare_at_price'}):
+        if price := self.product_json.get("compare_at_price", None):
+            return price / 100
+        elif price := self.soup.find('del', {'class': 'compare_at_price'}):
             return self.str_to_float(price.text)
 
     @property
     def save(self):
         if save := self.soup.find('div', {'class': 'product__label label-sale'}):
             return self.str_to_float(save.text)
+        elif self.before_price:
+            return round(100 * (1 - self.now_price / self.before_price))
 
     @property
     def picture_url(self):
-        if partial_url := self.soup.find('a', {
+        if images := self.product_json.get("images", None):
+            return 'https:' + images.pop(0)
+        elif partial_url := self.soup.find('a', {
             'class': 'product-single__thumbnail product-single__thumbnail--product-template'}):
             return 'https:' + partial_url.get('href')
 
@@ -70,9 +96,11 @@ class ProductScraper(Base):
 
     @property
     def details(self):
+        self._set_product_json()
         return Product(self.url,
                        self.url_to_sent,
                        self.title,
+                       self.product_type,
                        self.now_price,
                        self.before_price,
                        self.save,

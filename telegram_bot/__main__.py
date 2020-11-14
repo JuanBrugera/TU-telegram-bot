@@ -4,6 +4,7 @@ from telegram_bot import *
 from telegram_bot import formatters as fm
 
 import logging
+import random
 
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ParseMode
 from telegram.ext import (
@@ -56,6 +57,7 @@ def button(update: Update, context: CallbackContext) -> int:
     query.answer()
     answer = query.data
     logger.info(answer)
+    query.message.edit_reply_markup(reply_markup=None)
     if answer == NO:
         return send(context)
     else:
@@ -86,7 +88,7 @@ def send(context: CallbackContext):
                              text=fm.telegram_message(details),
                              parse_mode=ParseMode.MARKDOWN_V2,
                              reply_markup=InlineKeyboardMarkup([
-                                 [InlineKeyboardButton(text="💥 Ir a la oferta ❗💥", url=details.url_to_sent)]
+                                 [InlineKeyboardButton(text=random.choice(BUTTONS), url=details.url_to_sent)]
                              ])
                              )
     return ConversationHandler.END

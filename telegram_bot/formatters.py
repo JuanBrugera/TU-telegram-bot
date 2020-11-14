@@ -3,6 +3,8 @@ from telegram_bot.objects import Product
 
 
 def telegram_message(product: Product) -> str:
+    from telegram_bot import DEVICES
+
     add_lines = lambda s, n=1: ("\n" * n) + s
 
     def quote(s: Optional[Any]) -> Optional[str]:
@@ -13,7 +15,9 @@ def telegram_message(product: Product) -> str:
             s = str(s).replace(char, f"\\{char}")
         return s
 
-    m = f"[📲]({quote(product.picture_url)}) {quote(product.title)}"
+    default_icon = DEVICES.get('default')
+
+    m = f"[{DEVICES.get(product.product_type, default_icon)}]({quote(product.picture_url)}) {quote(product.title)}"
 
     if product.before_price:
         price_line = f"❌ ~{quote(product.before_price)} €~ 🔥 Ahora: *{quote(product.now_price)} €*"
