@@ -90,7 +90,7 @@ class ProductScraper(Base):
     @property
     def url_to_sent(self):
         if t_params := self.kwargs.get('tracking_params', None):
-            return self.url + "?" + ''.join([f"{tag}={value}" for tag, value in t_params.items() if value])
+            return self.url + "?" + '&'.join([f"{tag}={value}" for tag, value in t_params.items() if value])
         else:
             return self.url
 
