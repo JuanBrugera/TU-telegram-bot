@@ -77,16 +77,16 @@ To do so, just execute the following command in the TU-telegram-bot folder:
 telegram-venv/bin/python -m telegram-bot
 ```
 
-Our bot will be running and waiting for our messages
+Our bot will be running and waiting for our messages.
 
 ## How to use our bot
 
 ### Setting application.conf
-You have a file called application-template.conf
+You have a file called application-template.conf.
 
 Copy it into a new one called application.conf with your configuration.
 
-Each parameter is explained in the file itself
+Each parameter is explained in the file itself.
 
 ### Sending a link
 The bot will recognize any link that starts with _*https://www.tu.com/products/...*_
@@ -95,6 +95,11 @@ Simply send a text message with the link and the bot will do the rest.
 
 ## Use and collaborate
 Feel free to use this code.
+
+You can also package this code using the next command in the TU-telegram-bot folder:
+```shell script
+telegram-venv/bin/python setup.py sdist bdist_wheel
+```
 
 If you want to collaborate, you can open a pull request.
 
