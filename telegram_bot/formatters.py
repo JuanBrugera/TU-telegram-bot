@@ -22,10 +22,10 @@ def telegram_message(product: Product) -> str:
     if product.before_price:
         price_line = f"❌ ~{quote(product.before_price)} €~ 🔥 Ahora: *{quote(product.now_price)} €*"
     else:
-        price_line = f"💰 {quote(product.now_price)} €"
+        price_line = f"💰 Precio: {quote(product.now_price)} €"
 
     m += add_lines(price_line, 2)
-    m += add_lines("✅ *Características:*", 2)
+    m += add_lines("✅ *Características:*", 2) if product.features else m
     for feature in product.features:
         m += add_lines(f"🔸 {quote(feature)}")
 

@@ -30,14 +30,17 @@ YES, NO = "SI", "NO"
 
 
 def start(update: Update, context: CallbackContext) -> None:
-    # TODO start text
-    update.message.reply_text('Hi!')
+    update.message.reply_text("Envíame un enlace de producto de TU.com para empezar el proceso")
     return ConversationHandler.END
 
 
 def help(update: Update, context: CallbackContext) -> None:
-    # TODO help text
-    update.message.reply_text('Help!')
+    message = f"/{start.__name__} - Te muestro el mensaje de bienvenida\n"
+    message += f"/{help.__name__} - Te muestro este mensaje\n"
+    message += f"/{cancel.__name__} - Aborta la conversación en curso\n"
+    message += "\nTambién puedes mandarme un enlace de producto de TU.COM"
+
+    update.message.reply_text(message)
     return ConversationHandler.END
 
 
@@ -56,7 +59,7 @@ def button(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     query.answer()
     answer = query.data
-    logger.info(answer)
+    logger.debug(answer)
     query.message.edit_reply_markup(reply_markup=None)
     if answer == NO:
         return send(context)
@@ -75,14 +78,14 @@ def campaign(update: Update, context: CallbackContext):
 def send(context: CallbackContext):
     product_url = context.user_data.get('product_url')
 
-    logger.info(product_url)
+    logger.debug(product_url)
     campaign_id = context.user_data.get('campaign_id', None)
 
-    logger.info(campaign_id)
+    logger.debug(campaign_id)
     t_params = dict([tp.split("=") for tp in TRACKING_PARAMS.split("&")])
     t_params.update({'utm_campaign': campaign_id})
 
-    logger.info(t_params)
+    logger.debug(t_params)
     details = ProductScraper(product_url, tracking_params=t_params).details
     context.bot.send_message(chat_id=CHANNEL,
                              text=fm.telegram_message(details),
@@ -116,6 +119,7 @@ def main():
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler(start.__name__, start),
                       CommandHandler(help.__name__, help),
+                      CommandHandler(cancel.__name__, cancel),
                       MessageHandler(Filters.regex(TU_PRODUCT_REGEX.pattern), url)
                       ],
         states={
@@ -126,7 +130,7 @@ def main():
                 MessageHandler(Filters.text, campaign)
             ]
         },
-        conversation_timeout=120,
+        conversation_timeout=TIMEOUT,
         fallbacks=[CommandHandler(cancel.__name__, cancel)],
     )
 
