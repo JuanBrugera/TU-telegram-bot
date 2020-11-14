@@ -76,10 +76,13 @@ def campaign(update: Update, context: CallbackContext):
 
 
 def send(context: CallbackContext):
-    product_url = context.user_data.get('product_url')
+    product_url = context.user_data.pop('product_url')
 
     logger.debug(product_url)
     campaign_id = context.user_data.get('campaign_id', None)
+
+    if campaign_id:
+        context.user_data.pop('campaign_id')
 
     logger.debug(campaign_id)
     t_params = dict([tp.split("=") for tp in TRACKING_PARAMS.split("&")])

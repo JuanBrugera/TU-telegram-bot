@@ -2,7 +2,7 @@ import setuptools
 
 mayor = 1
 minor = 0
-fix = 1
+fix = 2
 
 with open("README.md", 'r') as f:
     long_description = f.read()
