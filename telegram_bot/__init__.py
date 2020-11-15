@@ -1,4 +1,5 @@
 import os
+
 from pyhocon import ConfigFactory
 
 MAIN_FOLDER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -12,3 +13,4 @@ TRACKING_PARAMS = config.get_string("tracking_params")
 DEVICES = config.get_config("devices")
 BUTTONS = config.get_list("button_texts")
 TIMEOUT = config.get_int("timeout")
+SOCIAL = config.get_config("social")

@@ -1,10 +1,11 @@
+import json
+
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
-from telegram_bot.objects import Product
-import json
 
-from telegram_bot.regexs import TU_PRODUCT_JSON_REGEX
+from telegram_bot.objects import Product
+from telegram_bot.regexs import *
 
 HEADERS = {'user-agent': UserAgent().chrome}
 
@@ -80,12 +81,19 @@ class ProductScraper(Base):
 
     @property
     def description(self):
-        return self.soup.find('div', {'class': 'bloque_info_producto descripcion'}).text
+        if desc := self.soup.find('div', {'class': 'bloque_info_producto descripcion'}):
+            text = desc.text
+            if matches := TU_PRODUCT_DESCRIPTION_UPPERS.findall(text):
+                add_whitspace = lambda s: s.replace(".", ". ")
+                for match in matches:
+                    text = text.replace(match, add_whitspace(match))
+            return text
 
     @property
     def features(self):
-        return [f for s in self.soup.find('div', {'id': 'tab-description'}).find_all('figcaption') if
-                (f := s.text.strip().replace("\n", ", "))]
+        if info := self.soup.find('div', {'class': TU_PRODUCT_INFO_REGEX}):
+            return [f for s in info.find_all('figcaption') if
+                    (f := s.text.strip().replace("\n", ", "))]
 
     @property
     def url_to_sent(self):

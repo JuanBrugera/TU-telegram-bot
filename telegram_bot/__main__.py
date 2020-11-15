@@ -1,8 +1,3 @@
-from telegram_bot.scrapers import ProductScraper
-from telegram_bot.regexs import *
-from telegram_bot import *
-from telegram_bot import formatters as fm
-
 import logging
 import random
 
@@ -16,6 +11,11 @@ from telegram.ext import (
     CallbackContext,
     CallbackQueryHandler
 )
+
+from telegram_bot import *
+from telegram_bot import formatters as fm
+from telegram_bot.regexs import *
+from telegram_bot.scrapers import ProductScraper
 
 # Enable logging
 logging.basicConfig(
@@ -95,7 +95,8 @@ def send(context: CallbackContext):
                              parse_mode=ParseMode.MARKDOWN_V2,
                              reply_markup=InlineKeyboardMarkup([
                                  [InlineKeyboardButton(text=random.choice(BUTTONS), url=details.url_to_sent)]
-                             ])
+                             ]),
+                             timeout=10
                              )
     return ConversationHandler.END
 

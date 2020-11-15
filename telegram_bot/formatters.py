@@ -1,9 +1,10 @@
 from typing import Optional, Any
+
 from telegram_bot.objects import Product
 
 
 def telegram_message(product: Product) -> str:
-    from telegram_bot import DEVICES
+    from telegram_bot import DEVICES, SOCIAL, CHANNEL
 
     add_lines = lambda s, n=1: ("\n" * n) + s
 
@@ -14,6 +15,9 @@ def telegram_message(product: Product) -> str:
         for char in chars:
             s = str(s).replace(char, f"\\{char}")
         return s
+
+    def social_link(name: str, url: str) -> str:
+        return f"[{name.title()}]({quote(url)})"
 
     default_icon = DEVICES.get('default')
 
@@ -32,5 +36,12 @@ def telegram_message(product: Product) -> str:
 
     if product.description:
         m += add_lines(f"ℹ️ {quote(product.description)}", 2)
+
+    social_line = ''
+    for name, url in SOCIAL.items():
+        social_line += f"{social_link(name, url)} "
+
+    m += add_lines(f"🧐 {quote(CHANNEL)}", 2)
+    m += add_lines(f"👉 Síguenos en {social_line}")
 
     return m
