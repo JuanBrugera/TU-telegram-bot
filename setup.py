@@ -1,7 +1,7 @@
 import setuptools
 
 mayor = 2
-minor = 0
+minor = 1
 fix = 0
 
 with open("README.md", 'r') as f:

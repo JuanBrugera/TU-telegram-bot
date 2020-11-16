@@ -113,7 +113,7 @@ def campaign(update: Update, context: CallbackContext):
         id1 = update.message.reply_text(text=fm.telegram_message(details),
                                         parse_mode=ParseMode.MARKDOWN_V2,
                                         reply_markup=InlineKeyboardMarkup([
-                                            [InlineKeyboardButton(text=random.choice(BUTTONS), url=details.url_to_sent)]
+                                            [InlineKeyboardButton(text=random.choice(OFFER_BUTTONS if details.before_price else NORMAL_BUTTONS), url=details.url_to_sent)]
                                         ]),
                                         timeout=10
                                         ).message_id
