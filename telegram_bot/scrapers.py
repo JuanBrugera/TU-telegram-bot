@@ -1,4 +1,5 @@
 import json
+import sys
 
 import requests
 from bs4 import BeautifulSoup
@@ -12,11 +13,17 @@ HEADERS = {'user-agent': UserAgent().chrome}
 
 class Base:
     def __init__(self, url, **kwargs):
-        self.url = url
+        try:
+            url_base, url_params = url.split("?")
+        except:
+            url_base, url_params = url, ''
+
+        self.url = url_base
+        self.params = dict([param.split("=") for param in url_params.split("&")]) if url_params else {}
+        self.params.update(kwargs.get('tracking_params', {}))
         r = requests.get(url=url, headers=HEADERS)
         self.status = r.status_code
         self.soup = BeautifulSoup(r.content, 'lxml')
-        self.kwargs = kwargs
 
     def __str__(self):
         return json.dumps({'url': self.url, 'status': self.status}, indent=2)
@@ -97,10 +104,17 @@ class ProductScraper(Base):
 
     @property
     def url_to_sent(self):
-        if t_params := self.kwargs.get('tracking_params', None):
-            return self.url + "?" + '&'.join([f"{tag}={value}" for tag, value in t_params.items() if value])
+        if self.params:
+            return self.url + "?" + '&'.join([f"{tag}={value}" for tag, value in self.params.items() if value])
         else:
             return self.url
+
+    @property
+    def stock(self):
+        if stock := self.soup.find('div', {'data-stock': True}):
+            return int(stock.get('data-stock'))
+        else:
+            return sys.maxsize
 
     @property
     def details(self):
@@ -114,4 +128,5 @@ class ProductScraper(Base):
                        self.save,
                        self.picture_url,
                        self.description,
-                       self.features)
+                       self.features,
+                       self.stock)
