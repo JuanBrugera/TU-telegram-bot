@@ -57,6 +57,9 @@ def help(update: Update, context: CallbackContext) -> None:
 def url(update: Update, context: CallbackContext) -> int:
     logger.debug("url")
 
+    if update.message.chat_id not in VALID_IDS:
+        return
+
     product_url = TU_PRODUCT_REGEX.search(update.message.text).group(0)
     logger.info(f"URL Received: {product_url}")
 
@@ -113,7 +116,9 @@ def campaign(update: Update, context: CallbackContext):
         id1 = update.message.reply_text(text=fm.telegram_message(details),
                                         parse_mode=ParseMode.MARKDOWN_V2,
                                         reply_markup=InlineKeyboardMarkup([
-                                            [InlineKeyboardButton(text=random.choice(OFFER_BUTTONS if details.before_price else NORMAL_BUTTONS), url=details.url_to_sent)]
+                                            [InlineKeyboardButton(text=random.choice(
+                                                OFFER_BUTTONS if details.before_price else NORMAL_BUTTONS),
+                                                                  url=details.url_to_sent)]
                                         ]),
                                         timeout=10
                                         ).message_id
@@ -140,7 +145,9 @@ def send(context: CallbackContext):
                                  text=fm.telegram_message(details),
                                  parse_mode=ParseMode.MARKDOWN_V2,
                                  reply_markup=InlineKeyboardMarkup([
-                                     [InlineKeyboardButton(text=random.choice(OFFER_BUTTONS if details.before_price else NORMAL_BUTTONS), url=details.url_to_sent)]
+                                     [InlineKeyboardButton(
+                                         text=random.choice(OFFER_BUTTONS if details.before_price else NORMAL_BUTTONS),
+                                         url=details.url_to_sent)]
                                  ]),
                                  timeout=10
                                  )
