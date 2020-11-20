@@ -58,7 +58,7 @@ def url(update: Update, context: CallbackContext) -> int:
     logger.debug("url")
 
     if update.message.chat_id not in VALID_IDS:
-        return
+        return ConversationHandler.END
 
     product_url = TU_PRODUCT_REGEX.search(update.message.text).group(0)
     logger.info(f"URL Received: {product_url}")
@@ -118,7 +118,7 @@ def campaign(update: Update, context: CallbackContext):
                                         reply_markup=InlineKeyboardMarkup([
                                             [InlineKeyboardButton(text=random.choice(
                                                 OFFER_BUTTONS if details.before_price else NORMAL_BUTTONS),
-                                                                  url=details.url_to_sent)]
+                                                url=details.url_to_sent)]
                                         ]),
                                         timeout=10
                                         ).message_id
