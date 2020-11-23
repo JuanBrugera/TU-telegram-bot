@@ -22,11 +22,17 @@ from telegram_bot.scrapers import ProductScraper
 warnings.filterwarnings("ignore")
 
 # Enable logging
-logging.basicConfig(
-    filename='telegram_bot.log',
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=LOG_LEVEL
-)
+if LOG_TO_STD:
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=LOG_LEVEL
+    )
+else:
+    logging.basicConfig(
+        filename='telegram_bot.log',
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=LOG_LEVEL
+    )
 
 logger = logging.getLogger(__name__)
 

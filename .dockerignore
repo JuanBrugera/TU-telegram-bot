@@ -1,0 +1,5 @@
+venv
+application_template.conf
+*.log
+.git
+.idea

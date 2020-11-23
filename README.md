@@ -79,6 +79,39 @@ telegram-venv/bin/python -m telegram-bot
 
 Our bot will be running and waiting for our messages.
 
+### Running the bot inside a Docker container
+
+1. Create <code>application.conf</code> from template as defined before. In addition to <code>application.conf</code>, next environment variables can be defined to set Telegram valid ids,
+token and channels:
+
+
+| Variable | Description |
+| - | - |
+| TELEGRAM_CHANNEL | Channel ID (e.g. @ofertas_tu_com) |
+| TELEGRAM_IDS | Comma separated ID list (e.g. 11123232,212323223,223122212) |
+| LOG_LEVEL | Bot log level |
+| LOG_TO_STD | If set to <code>TRUE</code>, print logs in standard output instead of a file |
+
+Note: environment variables overwrite <code>application.conf</code> values. 
+
+2. Create a Docker container image:
+
+```shell script
+docker build -t tu-telegram-bot .
+```
+
+3. Run the container
+
+```shell script
+docker run -d --name telegram-bot tu-telegram-bot
+```
+
+4. Stop the container
+
+```shell script
+docker stop telegram-bot
+```
+
 ## How to use our bot
 
 ### Setting application.conf
