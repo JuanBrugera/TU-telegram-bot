@@ -88,6 +88,7 @@ token and channels:
 | Variable | Description |
 | - | - |
 | TELEGRAM_CHANNEL | Channel ID (e.g. @ofertas_tu_com) |
+| TELEGRAM_TOKEN | Telegram Bot API token |
 | TELEGRAM_IDS | Comma separated ID list (e.g. 11123232,212323223,223122212) |
 | LOG_LEVEL | Bot log level |
 | LOG_TO_STD | If set to <code>TRUE</code>, print logs in standard output instead of a file |
