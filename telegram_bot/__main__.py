@@ -16,6 +16,7 @@ from telegram.ext import (
 
 from telegram_bot import *
 from telegram_bot import formatters as fm
+from telegram_bot.literals import UserData
 from telegram_bot.regexs import *
 from telegram_bot.scrapers import ProductScraper
 
@@ -41,14 +42,24 @@ CHOOSING, UTM_CAMPAIGN = range(2)
 YES, NO = "SI", "NO"
 
 
-def start(update: Update, context: CallbackContext) -> None:
-    logger.debug("start")
+def clean_user_data(context: CallbackContext) -> None:
+    keys_to_pop = UserData.all_literals().intersection(context.user_data.keys())
+    for key in keys_to_pop:
+        context.user_data.pop(key)
 
-    update.message.reply_text("Envíame un enlace de producto de TU.com para empezar el proceso")
+
+def clean_and_end(context: CallbackContext) -> int:
+    clean_user_data(context)
     return ConversationHandler.END
 
 
-def help(update: Update, context: CallbackContext) -> None:
+def start(update: Update, context: CallbackContext) -> int:
+    logger.debug("start")
+    update.message.reply_text("Envíame un enlace de producto de TU.com para empezar el proceso")
+    return clean_and_end(context)
+
+
+def help(update: Update, context: CallbackContext) -> int:
     logger.debug("help")
 
     message = f"/{start.__name__} - Te muestro el mensaje de bienvenida\n"
@@ -57,7 +68,7 @@ def help(update: Update, context: CallbackContext) -> None:
     message += "\nTambién puedes mandarme un enlace de producto de TU.COM"
 
     update.message.reply_text(message)
-    return ConversationHandler.END
+    return clean_and_end(context)
 
 
 def url(update: Update, context: CallbackContext) -> int:
@@ -66,38 +77,14 @@ def url(update: Update, context: CallbackContext) -> int:
     if update.message.chat_id not in VALID_IDS:
         return ConversationHandler.END
 
+    clean_user_data(context)
+
     product_url = TU_PRODUCT_REGEX.search(update.message.text).group(0)
     logger.info(f"URL Received: {product_url}")
 
-    context.user_data.update({'product_url': product_url})
+    context.user_data.update({UserData.PRODUCT_URL: product_url})
     update.message.reply_text("Dime el ID de campaña")
     return UTM_CAMPAIGN
-
-
-def button(update: Update, context: CallbackContext) -> int:
-    logger.debug("button")
-
-    query = update.callback_query
-    query.answer()
-    answer = query.data
-    query.message.edit_reply_markup(reply_markup=None)
-    logger.debug(answer)
-
-    chat_id = context.user_data.pop('chat_id')
-    message_ids = context.user_data.pop('message_ids')
-
-    if answer == YES:
-        send(context)
-    else:
-        context.user_data.pop('details')
-
-    for mid in message_ids:
-        context.bot.delete_message(chat_id=chat_id, message_id=mid)
-
-    context.bot.send_message(chat_id=chat_id,
-                             text="Hecho!")
-
-    return ConversationHandler.END
 
 
 def campaign(update: Update, context: CallbackContext):
@@ -106,7 +93,7 @@ def campaign(update: Update, context: CallbackContext):
     campaign_id = update.message.text.strip()
     logger.info(f"CAMPAIGN ID: {campaign_id}")
 
-    product_url = context.user_data.pop('product_url')
+    product_url = context.user_data.pop(UserData.PRODUCT_URL)
     logger.info(f"PRODUCT URL: {product_url}")
 
     chat_id = update.message.chat_id
@@ -125,8 +112,7 @@ def campaign(update: Update, context: CallbackContext):
                                             [InlineKeyboardButton(text=random.choice(
                                                 OFFER_BUTTONS if details.before_price else NORMAL_BUTTONS),
                                                 url=details.url_to_sent)]
-                                        ]),
-                                        timeout=10
+                                        ])
                                         ).message_id
         reply_markup = InlineKeyboardMarkup([[
             InlineKeyboardButton(text=YES, callback_data=YES),
@@ -134,18 +120,43 @@ def campaign(update: Update, context: CallbackContext):
         ]])
         id2 = update.message.reply_text("Este es el mensaje que voy a enviar, OK?",
                                         reply_markup=reply_markup).message_id
-        context.user_data.update({'details': details,
-                                  'chat_id': chat_id,
-                                  'message_ids': [id1, id2]})
+        context.user_data.update({UserData.DETAILS: details,
+                                  UserData.CHAT_ID: chat_id,
+                                  UserData.MESSAGE_IDS: [id1, id2]})
 
     return CHOOSING
 
 
-def send(context: CallbackContext):
-    logger.debug("send")
+def button(update: Update, context: CallbackContext) -> int:
+    logger.debug("button")
 
-    details = context.user_data.get('details', None)
-    if details:
+    query = update.callback_query
+    query.answer()
+    answer = query.data
+    query.message.edit_reply_markup(reply_markup=None)
+    logger.debug(answer)
+
+    chat_id = context.user_data.pop(UserData.CHAT_ID)
+    message_ids = context.user_data.pop(UserData.MESSAGE_IDS)
+
+    if answer == YES:
+        send(context)
+    else:
+        context.user_data.pop(UserData.DETAILS)
+
+    for mid in message_ids:
+        context.bot.delete_message(chat_id=chat_id, message_id=mid)
+
+    context.bot.send_message(chat_id=chat_id,
+                             text="Hecho!")
+
+    return clean_and_end(context)
+
+
+def send(context: CallbackContext) -> None:
+    logger.debug("send")
+    try:
+        details = context.user_data.pop(UserData.DETAILS)
         logger.info(f"Sending message to {CHANNEL}")
         context.bot.send_message(chat_id=CHANNEL,
                                  text=fm.telegram_message(details),
@@ -154,21 +165,21 @@ def send(context: CallbackContext):
                                      [InlineKeyboardButton(
                                          text=random.choice(OFFER_BUTTONS if details.before_price else NORMAL_BUTTONS),
                                          url=details.url_to_sent)]
-                                 ]),
-                                 timeout=10
+                                 ])
                                  )
-    return ConversationHandler.END
+    except KeyError:
+        logger.critical("Details not found!!")
 
 
-def cancel(update: Update, context: CallbackContext) -> None:
+def cancel(update: Update, context: CallbackContext) -> int:
     logger.debug("cancel")
     update.message.reply_text("Conversación cancelada")
-    context.user_data = {}
-    return ConversationHandler.END
+    return clean_and_end(context)
 
 
 def error(update: Update, context: CallbackContext) -> None:
     logger.error(msg="Exception while handling an update:", exc_info=context.error)
+    return clean_user_data(context)
 
 
 def main():
@@ -176,7 +187,7 @@ def main():
     # Create the Updater and pass it your bot's token.
     # Make sure to set use_context=True to use the new context based callbacks
     # Post version 12 this will no longer be necessary
-    updater = Updater(token=TOKEN, use_context=True)
+    updater = Updater(token=TOKEN, use_context=True, request_kwargs={'read_timeout': 20, 'connect_timeout': 20})
 
     # Get the dispatcher to register handlers
     dispatcher = updater.dispatcher
@@ -192,11 +203,11 @@ def main():
                 CallbackQueryHandler(button)
             ],
             UTM_CAMPAIGN: [
-                MessageHandler(Filters.text, campaign)
+                MessageHandler(Filters.text & (~Filters.command), campaign)
             ]
         },
         conversation_timeout=TIMEOUT,
-        fallbacks=[CommandHandler(cancel.__name__, cancel)],
+        fallbacks=[CommandHandler(cancel.__name__, cancel)]
     )
 
     dispatcher.add_handler(conv_handler)
